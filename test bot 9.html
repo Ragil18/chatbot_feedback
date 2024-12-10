@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback Chatbot - Neuberg Diagnostics</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom, #09203F 0%, #537895 100%);;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: white;
+            overflow: hidden;
+        }
+
+        #chat-container {
+            background: rgb(238,174,202);
+            background: radial-gradient(circle, rgb(66, 18, 39) 0%, rgb(3, 19, 37) 100%);
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            height: 80%;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 8px rgba(241, 217, 0, 0.7);
+            padding: 15px;
+            border: 2px solid #1e0261ad;
+            position: relative;
+            overflow: hidden;
+            animation: containerFadeIn 0.8s ease-out;
+        }
+
+        @keyframes containerFadeIn {
+            from {
+                transform: scale(0.95);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        #header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        #logo {
+            width: 30px;
+            height: 30px;
+            animation: logoBlink 1.5s infinite alternate;
+        }
+
+        @keyframes logoBlink {
+            0% { filter: hue-rotate(0deg); }
+            100% { filter: hue-rotate(180deg); }
+        }
+
+        #title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #6A0DAD;
+            text-shadow: 0 0 5px white, 0 0 10px white, 0 0 15px white;
+        }
+
+        #chat-box {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #ff0000;
+        }
+
+        .message {
+            background-color: #7A2048;
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 80%;
+            margin: 5px;
+            color: white;
+            transform: translateY(20px);
+            opacity: 0;
+            animation: messageFadeIn 0.6s forwards;
+        }
+
+        @keyframes messageFadeIn {
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .user-message { align-self: flex-end; }
+        .bot-message { align-self: flex-start; }
+
+        #button-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 10px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+            align-items: center;
+        }
+
+        .feedback-button {
+            padding: 12px 20px;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            text-align: center;
+            width: 85%;
+            transform: scale(0);
+            transition: transform 0.3s ease-out, background-color 0.3s ease-out, box-shadow 0.3s ease-out;
+            position: relative;
+            overflow: hidden;
+            font-size: 16px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .feedback-button::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            transform: scale(0);
+            transition: transform 0.3s ease-out;
+        }
+
+        .feedback-button:hover::before { transform: scale(1); }
+
+        .good-button { background-color: #1cb821; }
+        .neutral-button { background-color: #FFBF00; }
+        .bad-button { background-color: #f82516; }
+        .purple-button { background-color: #be6704; }
+
+        .selected { background-color: #008141b0; }
+
+        .feedback-button:hover {
+            opacity: 0.9;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+        }
+
+        #other-feedback-container {
+            display: none;
+            margin-top: 10px;
+        }
+
+        #thank-you-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #94b30c;
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 400px;
+            text-align: center;
+            display: none;
+            z-index: 1002;
+            animation: modalFadeIn 0.5s forwards;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -60%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        #lock-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1001;
+            display: none;
+        }
+
+        #back-button {
+            padding: 10px 15px;
+            background-color: #014d79;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 50%;
+            margin-top: 10px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        #back-button:hover {
+            background-color: #07ac30;
+        }
+
+        #submit-feedback-btn {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            font-size: 16px;
+            border-radius: 10px;
+            width: 85%;
+            margin-top: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.3s ease-in-out;
+        }
+
+        #submit-feedback-btn:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="chat-container">
+        <div id="header">
+            <img id="logo" src="logo.png" alt="Neuberg Diagnostics Logo" />
+            <div id="title">Neuberg Diagnostics</div>
+        </div>
+
+        <div id="chat-box"></div>
+        
+        <div id="window1" class="window">
+            <div id="button-container">
+                <button id="feedback-btn1" class="feedback-button good-button" onclick="handleFeedback('😊')">😊 Good</button>
+                <button id="feedback-btn2" class="feedback-button neutral-button" onclick="handleFeedback('😐')">😐 Neutral</button>
+                <button id="feedback-btn3" class="feedback-button bad-button" onclick="handleFeedback('😞')">😞 Bad</button>
+            </div>
+        </div>
+
+        <div id="other-feedback-container">
+            <textarea id="other-feedback-textbox" placeholder="What is One Thing we could do to make you Happy" rows="4" style="width: 90%; padding: 12px; margin-top: 10px; border-radius: 10px; border: 1px solid #ccc;"></textarea>
+            <button id="back-button" onclick="goBack()">Back</button>
+        </div>
+    </div>
+
+    <div id="thank-you-modal">
+        Thank you for your feedback! We truly appreciate it and will work hard to improve our services.
+    </div>
+
+    <div id="lock-overlay"></div>
+
+    <script>
+        let chatBox = document.getElementById('chat-box');
+        let feedbackStep = 0;
+        let selectedOptions = [];
+        let lockFeedback = false;
+
+        function botMessage(message) {
+            let botMessageDiv = document.createElement('div');
+            botMessageDiv.classList.add('bot-message');
+            botMessageDiv.innerHTML = `<div class="message">${message}</div>`;
+            chatBox.appendChild(botMessageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function userMessage(message) {
+ let userMessageDiv = document.createElement('div');
+            userMessageDiv.classList.add('user-message');
+            userMessageDiv.innerHTML = `<div class="message">${message}</div>`;
+            chatBox.appendChild(userMessageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function startChat() {
+            botMessage("Hello! Welcome to Neuberg Diagnostics. How was your recent experience with us?");
+            feedbackStep = 1;
+            showWindow1();
+        }
+
+        function showWindow1() {
+            const window1 = document.getElementById('window1');
+            window1.style.display = 'block';
+            toggleButtons(true);
+        }
+
+        function hideWindow1() {
+            const window1 = document.getElementById('window1');
+            window1.style.display = 'none';
+        }
+
+        function toggleButtons(show) {
+            const buttonContainer = document.getElementById('button-container');
+            if (show) {
+                buttonContainer.style.opacity = 1;
+                buttonContainer.style.transform = 'translateY(0)';
+                setTimeout(() => {
+                    document.querySelectorAll('.feedback-button').forEach(button => {
+                        button.style.transform = 'scale(1)';
+                    });
+                }, 200);
+            } else {
+                buttonContainer.style.opacity = 0;
+                buttonContainer.style.transform = 'translateY(-20px)';
+            }
+        }
+
+        function handleFeedback(rating) {
+            if (lockFeedback) {
+                return;
+            }
+
+            userMessage(rating);
+            hideWindow1();
+
+            if (rating === '😊') {
+                botMessage("We are happy to delight you with our services, please tell us what you liked the most..");
+            } else if (rating === '😐') {
+                botMessage("Thank you for your feedback, please let us know what could have been better?");
+            } else if (rating === '😞') {
+                botMessage("We regret that you had a poor experience. What went wrong?");
+            }
+
+            let buttons = ['Report Delivery Time, as committed', 'Report Accuracy', 'Report Access through Email, WhatsApp & Mobile App', 'Our Doctor Connect, if requested', 'Other'];
+            let buttonContainer = document.createElement('div');
+            buttonContainer.setAttribute('id', 'button-container');
+            buttons.forEach(option => {
+                let button = document.createElement('button');
+                button.classList.add('feedback-button', 'purple-button');
+                button.innerText = option;
+                button.onclick = () => toggleOptionSelection(button, option);
+                buttonContainer.appendChild(button);
+            });
+
+            let submitButton = document.createElement('button');
+            submitButton.id = 'submit-feedback-btn';
+            submitButton.innerText = 'Submit';
+            submitButton.onclick = submitSelectedFeedback;
+            submitButton.disabled = true;
+            buttonContainer.appendChild(submitButton);
+
+            chatBox.appendChild(buttonContainer);
+            setTimeout(() => toggleButtons(true), 50);
+        }
+
+        function toggleOptionSelection(button, option) {
+            if (selectedOptions.includes(option)) {
+                selectedOptions = selectedOptions.filter(item => item !== option);
+                button.classList.remove('selected');
+            } else {
+                selectedOptions.push(option);
+                button.classList.add('selected');
+            }
+
+            const submitButton = document.getElementById('submit-feedback-btn');
+            submitButton.disabled = selectedOptions.length === 0;
+
+            if (option === 'Other') {
+                const textbox = document.getElementById('other-feedback-container');
+                textbox.style.display = textbox.style.display === 'none' ? 'block' : 'none';
+                button.style.backgroundColor = textbox.style.display === 'block' ? '#FFBF00' : '#6A0DAD';
+            } else {
+                document.getElementById('other-feedback-container').style.display = 'none';
+            }
+        }
+
+        function submitSelectedFeedback() {
+            if (selectedOptions.length === 0) {
+                return;
+            }
+
+            userMessage(selectedOptions.join(', '));
+            botMessage("Thank you for your feedback! Is there anything else you would like to add?");
+
+            document.getElementById('thank-you-modal').style.display = 'block';
+            document.getElementById('lock-overlay').style.display = 'block';
+            lockFeedback = true;
+
+            setTimeout(() => {
+                document.getElementById('thank-you-modal').style.display = 'none';
+                document.getElementById('lock-overlay').style.display = 'none';
+                lockFeedback = false;
+            }, 600000);
+        }
+
+        function goBack() {
+            document.getElementById('other-feedback-container').style.display = 'none';
+        }
+
+        startChat();
+    </script>
+</body>
+</html>
